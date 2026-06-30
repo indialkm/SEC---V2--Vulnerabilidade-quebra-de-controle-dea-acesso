@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .admin-link {
+            display: block;
+            margin-top: 20px;
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Olá, <span id="nomeAluno"></span></h1>
+        <h3 id="nomeCurso">Curso: Carregando...</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Avaliação</th>
+                    <th>Nota</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaNotas">
+                <tr>
+                    <td colspan="2">Carregando notas...</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div id="areaAdmin"></div>
+        <br>
+        <button onclick="localStorage.clear(); window.location.href='index.html';">Sair</button>
+    </div>
+
+	<script type="module">
+	    import { buscarNotasPorAluno, buscarInfoUsuario } from './api.js';
+
+	    document.addEventListener("DOMContentLoaded", async () => {
+	        let info;
+
+	        try {
+	            info = await buscarInfoUsuario();
+	        } catch (err) {
+	            console.error("Sessão inválida:", err);
+	            window.location.href = 'index.html';
+	            return;
+	        }
+
+	        document.getElementById("nomeAluno").textContent = info.nomeUsuario;
+	        document.getElementById("nomeCurso").textContent =
+	            info.nomeCurso ? `Curso: ${info.nomeCurso}` : "Curso não definido";
+
+	        if (info.roles && info.roles.includes("ROLE_PROFESSOR")) {
+	            const link = document.createElement("a");
+	            link.href = "notas.html";
+	            link.className = "admin-link";
+	            link.textContent = "➕ Lançar Nova Nota";
+	            document.getElementById("areaAdmin").appendChild(link);
+	        }
+
+	        try {
+	            const notas = await buscarNotasPorAluno(info.idUsuario);
+	            const tbody = document.getElementById("tabelaNotas");
+
+	            if (notas && notas.length > 0) {
+	                tbody.innerHTML = notas.map(n => `
+	                    <tr>
+	                        <td>${n.tituloAvaliacao}</td>
+	                        <td>${n.valor}</td>
+	                    </tr>
+	                `).join('');
+	            } else {
+	                tbody.innerHTML = '<tr><td colspan="2">Nenhuma nota cadastrada para este aluno.</td></tr>';
+	            }
+	        } catch (err) {
+	            document.getElementById("tabelaNotas").innerHTML =
+	                '<tr><td colspan="2">Erro ao carregar notas.</td></tr>';
+	            console.error(err);
+	        }
+	    });
+	</script>
+</body>
+
+</html>
