@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão de Notas - NotaFlow</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #f8fafc;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        select,
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #0f172a;
+            color: white;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Lançar Nota</h2>
+        <form id="formLancar">
+            <select id="alunoSelect" required>
+                <option value="">Selecione um aluno...</option>
+            </select>
+            <input type="text" id="titulo" placeholder="Título da Avaliação" required>
+            <input type="number" id="valor" step="0.1" placeholder="Nota (0-10)" required>
+            <button type="submit">Salvar Nova Nota</button>
+        </form>
+
+        <div id="areaEdicao" style="display: none; margin-top: 30px;">
+            <hr>
+            <h4>Histórico e Edição</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Avaliação</th>
+                        <th>Nota</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaEdicao"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { listarAlunosPorCurso, lancarNota, buscarNotasPorAluno, atualizarNota } from './api.js';
+        import { verificarAutenticacao } from './routes.js';
+
+        verificarAutenticacao();
+
+        const select = document.getElementById('alunoSelect');
+        const tbody = document.getElementById('tabelaEdicao');
+        const areaEdicao = document.getElementById('areaEdicao');
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const cursoId = localStorage.getItem("cursoId");
+            try {
+                const alunos = await listarAlunosPorCurso(cursoId);
+                alunos.forEach(a => {
+                    const opt = document.createElement("option");
+                    opt.value = a.id;
+                    opt.textContent = a.nome;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                alert("Erro ao carregar alunos.");
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        select.addEventListener('change', async (e) => {
+            if (!e.target.value) { areaEdicao.style.display = 'none'; return; }
+
+            tbody.innerHTML = '<tr><td colspan="3">Carregando...</td></tr>';
+            areaEdicao.style.display = 'block';
+
+            const notas = await buscarNotasPorAluno(e.target.value);
+            tbody.innerHTML = notas.map(n => `
+            <tr>
+                <td>${n.tituloAvaliacao}</td>
+                <td><input type="number" id="nota-${n.id}" value="${n.valor}"></td>
+                <td><button class="btn-salvar" data-id="${n.id}">Salvar</button></td>
+            </tr>
+        `).join('');
+        });
+
+        document.getElementById('formLancar').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const cursoId = localStorage.getItem("cursoId");
+            await lancarNota({
+                tituloAvaliacao: document.getElementById('titulo').value,
+                valor: parseFloat(document.getElementById('valor').value),
+                alunoId: select.value,
+                cursoId: cursoId
+            });
+            alert("Nota lançada!");
+            location.reload();
+        });
+
+        tbody.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('btn-salvar')) {
+                const id = e.target.getAttribute('data-id');
+                const valor = document.getElementById(`nota-${id}`).value;
+                try {
+                    await atualizarNota(id, valor);
+                    alert("Nota atualizada com sucesso!");
+                } catch (error) {
+                    console.error("Erro na atualização:", error);
+                    alert("Erro ao atualizar. Verifique o console.");
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
