@@ -76,7 +76,6 @@ Na versão segura, a mesma requisição retorna **HTTP 403 Forbidden**.
 
 ## 📚 Referências
 
-- OWASP. A01:2021 – Broken Access Control. Disponível em: https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/
 - AUTH0. Why Broken Access Control Still Dominates OWASP Top 10. Disponível em: https://auth0.com/blog/why-broken-access-control-still-dominates-owasp-top-10/
 - SPRING. Spring Security Reference Documentation. Disponível em: https://docs.spring.io/spring-security/reference/servlet/authorization/architecture.html
 - ZAPROXY. Access Control Testing. Disponível em: https://www.zaproxy.org/docs/desktop/addons/access-control-testing/
